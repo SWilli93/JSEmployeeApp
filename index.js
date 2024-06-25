@@ -49,6 +49,11 @@ function getInput(promptText, validator, transformer) {
   return value;
 }
 
+const getNextEmployeeID = () => {
+  const maxID = Math.max(...employees.map(e => e.id));
+  return maxID + 1;
+}
+
 // Validator functions ---------------------------------------------------
 
 const isStringInputValid = (input) => {
@@ -82,10 +87,11 @@ function listEmployees() {
   console.log(`Employee list completed`);
 }
 
-function addEmployee() {
+async function addEmployee() {
   console.log(`Add Employee -----------------------------`);
   console.log('');
   let employee = {};
+  employee.id = getNextEmployeeID();
   employee.firstName = getInput("First Name: ", isStringInputValid);
   employee.lastName = getInput("Last Name: ", isStringInputValid);
   let startDateYear = getInput("Employee Start Year (1990-2023): ", isIntegerValid(1990, 2023));
@@ -94,9 +100,8 @@ function addEmployee() {
   employee.startDate = new Date(startDateYear, startDateMonth - 1, startDateDay);
   employee.isActive = getInput("Is employee active (yes or no): ", isBooleanInputValid, i => (i === "yes"));
 
-  // Output Employee JSON
-  const json = JSON.stringify(employee, null, 2);
-  console.log(`Employee: ${json}`);
+  employee.push(employee);
+  await writeData();
 }
 
 // Search for employees by id
@@ -136,29 +141,36 @@ function searchByName() {
 // Get the command the user wants to exexcute
 const command = process.argv[2].toLowerCase();
 
-switch (command) {
 
-  case 'list':
-    listEmployees();
-    break;
+const main = async () => {
+  switch (command) {
 
-  case 'add':
-    addEmployee();
-    break;
-
-  case 'search-by-id':
-    searchById();
-    break;
-
-  case 'search-by-name':
-    searchByName();
-    break;
-
-  default:
-    console.log('Unsupported command. Exiting...');
-    process.exit(1);
-
+    case 'list':
+      listEmployees();
+      break;
+  
+    case 'add':
+      addEmployee();
+      break;
+  
+    case 'search-by-id':
+      searchById();
+      break;
+  
+    case 'search-by-name':
+      searchByName();
+      break;
+  
+    default:
+      console.log('Unsupported command. Exiting...');
+      process.exit(1);
+  
+  }  
 }
 
-
-
+loadData()
+  .then(main)
+  .catch((err) => {
+    console.error("Cannot complete startup.");
+    throw err;
+  })
