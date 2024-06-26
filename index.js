@@ -1,5 +1,5 @@
 import fs from 'node:fs/promises'
-import myAPIkey from './fetch.js'
+import {myAPIkey} from './fetch.js'
 
 // GLOBAL VARIABLES -------------------------------------
 
@@ -60,7 +60,9 @@ let prompt = createPrompt();
 // Get the command the user wants to exexcute
 const logEmployee = (employee) => {
   Object.entries(employee).forEach(entry => {
-    console.log(`${entry[0]}: ${entry[1]}`);
+    if(entry[0] !== "salaryUSD" || entry[0] !== "localCurrency") {
+      console.log(`${entry[0]}: ${entry[1]}`);
+    }
   });
 }
 
@@ -131,8 +133,10 @@ async function addEmployee() {
   let startDateDay = getInput("Employee Start Date Day (1-31): ", isIntegerValid(1, 31));
   employee.startDate = new Date(startDateYear, startDateMonth - 1, startDateDay);
   employee.isActive = getInput("Is employee active (yes or no): ", isBooleanInputValid, i => (i === "yes"));
+  employee.salaryUSD = getInput("Annual salary in USD: ", isIntegerValid(10000, 1000000));
+  employee.localCurrency = getInput("Local Currency(3 letter code): ", isCurrencyCodeValid);
 
-  employee.push(employee);
+  employees.push(employee);
   await writeData();
 }
 
@@ -201,6 +205,7 @@ const main = async () => {
 }
 
 loadData()
+  .then(getCurrencyConversionData)
   .then(main)
   .catch((err) => {
     console.error("Cannot complete startup.");
