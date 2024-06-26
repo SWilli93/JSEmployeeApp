@@ -150,7 +150,7 @@ const main = async () => {
       break;
   
     case 'add':
-      addEmployee();
+      await addEmployee();
       break;
   
     case 'search-by-id':
