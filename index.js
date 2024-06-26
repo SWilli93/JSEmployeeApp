@@ -1,57 +1,12 @@
-import fs from 'node:fs/promises'
-import {myAPIkey} from './fetch.js'
+import { loadData, writeData } from './data.js'
+import { getCurrencyConversionData, getSalary } from './currency.js'
+
 
 // GLOBAL VARIABLES -------------------------------------
 
 let employees = [];
 let currencyData;
 
-// Currency Data --------------------------------
-
-const getCurrencyConversionData = async () => {
-  const options = {
-    method: "GET",
-    redirect: 'follow',
-  };
-
-  const response = await fetch(`http://api.exchangeratesapi.io/v1/latest?access_key=${myAPIkey}`, options)
-  if(!response.ok) {
-    throw new Error("Cannot fetch currency data.");
-  }
-
-  currencyData = await response.json();
-}
-
-const getSalary = (amountUSD, currency) => {
-  const amount = (currency === "USD" ? amountUSD : amountUSD * currencyData.rates[currency]);
-  const formatter = Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: currency
-  });
-  return formatter.format(amount);
-}
-
-// Loading and writing data to the filesystem -------------------------------------
-const loadData = async () => {
-  console.log("Loading employees.....")
-  try {
-    const fileData = await fs.readFile('./data.json');
-    employees = JSON.parse(fileData);
-  } catch (err) {
-    console.log("Cannot load in Employees");
-    throw err;
-  }
-}
-
-const writeData = async () => {
-  console.log("Writing employees....");
-    try {
-      fs.writeFile('./data.json', JSON.stringify(employees, null, 2));
-    } catch (err) {
-      console.error("Cannot write employees data.");
-      throw err;
-    }
-}
 
 
 import createPrompt from 'prompt-sync';
@@ -64,6 +19,8 @@ const logEmployee = (employee) => {
       console.log(`${entry[0]}: ${entry[1]}`);
     }
   });
+  console.log(`Salary USD: ${getSalary(employee.salaryUSD, "USD", currencyData)}`);
+  console.log(`Local Salary: ${getSalary(employee.salaryUSD, employee.localCurrency, currencyData)}`);
 }
 
 function getInput(promptText, validator, transformer) {
@@ -137,7 +94,7 @@ async function addEmployee() {
   employee.localCurrency = getInput("Local Currency(3 letter code): ", isCurrencyCodeValid);
 
   employees.push(employee);
-  await writeData();
+  await writeData(employees);
 }
 
 // Search for employees by id
@@ -204,7 +161,11 @@ const main = async () => {
   }  
 }
 Promise.all([ loadData(), getCurrencyConversionData()])
-  .then(main)
+  .then(results => {
+    employees = results[0];
+    currencyData = results[1];
+    return main();
+  })
   .catch((err) => {
     console.error("Cannot complete startup.");
     throw err;
