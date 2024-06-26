@@ -1,8 +1,35 @@
 import fs from 'node:fs/promises'
+import myAPIkey from './fetch.js'
 
 // GLOBAL VARIABLES -------------------------------------
 
 let employees = [];
+let currencyData;
+
+// Currency Data --------------------------------
+
+const getCurrencyConversionData = async () => {
+  const options = {
+    method: "GET",
+    redirect: 'follow',
+  };
+
+  const response = await fetch(`http://api.exchangeratesapi.io/v1/latest?access_key=${myAPIkey}`, options)
+  if(!response.ok) {
+    throw new Error("Cannot fetch currency data.");
+  }
+
+  currencyData = await response.json();
+}
+
+const getSalary = (amountUSD, currency) => {
+  const amount = (currency === "USD" ? amountUSD : amountUSD * currencyData.rates[currency]);
+  const formatter = Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency: currency
+  });
+  return formatter.format(amount);
+}
 
 // Loading and writing data to the filesystem -------------------------------------
 const loadData = async () => {
@@ -55,6 +82,11 @@ const getNextEmployeeID = () => {
 }
 
 // Validator functions ---------------------------------------------------
+
+const isCurrencyCodeValid = function (code) {
+  const currencyCodes = Object.keys(currencyData.rates);
+  return (currencyCodes.indexOf(code) > -1);
+}
 
 const isStringInputValid = (input) => {
   return (input) ? true : false;
