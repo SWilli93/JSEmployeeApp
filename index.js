@@ -1,4 +1,5 @@
-import { loadData, writeData } from './data.js'
+// import { loadData, writeData } from './data.js'
+import { getAllEmployees, insertEmployee } from './database.js';
 import { getCurrencyConversionData, getSalary } from './currency.js'
 
 
@@ -36,6 +37,9 @@ function getInput(promptText, validator, transformer) {
 }
 
 const getNextEmployeeID = () => {
+  if (employees.length === 0) {
+    return 1;
+  }
   const maxID = Math.max(...employees.map(e => e.id));
   return maxID + 1;
 }
@@ -85,6 +89,7 @@ async function addEmployee() {
   employee.id = getNextEmployeeID();
   employee.firstName = getInput("First Name: ", isStringInputValid);
   employee.lastName = getInput("Last Name: ", isStringInputValid);
+  employee.email = getInput("Email: ", isStringInputValid);
   let startDateYear = getInput("Employee Start Year (1990-2023): ", isIntegerValid(1990, 2023));
   let startDateMonth = getInput("Employee Start Date Month (1-12): ", isIntegerValid(1, 12));
   let startDateDay = getInput("Employee Start Date Day (1-31): ", isIntegerValid(1, 31));
@@ -93,8 +98,7 @@ async function addEmployee() {
   employee.salaryUSD = getInput("Annual salary in USD: ", isIntegerValid(10000, 1000000));
   employee.localCurrency = getInput("Local Currency(3 letter code): ", isCurrencyCodeValid);
 
-  employees.push(employee);
-  await writeData(employees);
+  await insertEmployee(employee);
 }
 
 // Search for employees by id
@@ -160,7 +164,7 @@ const main = async () => {
   
   }  
 }
-Promise.all([ loadData(), getCurrencyConversionData()])
+Promise.all([ getAllEmployees(), getCurrencyConversionData()])
   .then(results => {
     employees = results[0];
     currencyData = results[1];
